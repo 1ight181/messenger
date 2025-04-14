@@ -1,6 +1,7 @@
 package config_types
 
 type WebSocketConfig struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host  string `mapstructure:"host"`
+	Port  int    `mapstructure:"port"`
+	Debug bool   `mapstructure:"debug"`
 }
