@@ -5,6 +5,10 @@ import (
 	"os"
 
 	"messager/internal/config_reader"
+	"messager/internal/messaging/processor"
+	"messager/internal/messaging/receiver"
+	"messager/internal/messaging/sender"
+	"messager/internal/websocket"
 
 	"github.com/spf13/viper"
 )
@@ -31,5 +35,19 @@ func main() {
 
 	wsHost := config.GetWebSocketHost()
 	wsPort := config.GetWebSocketPort()
-	log.Printf("Вебсокет запущен на: %s:%d", wsHost, wsPort)
+	wsDebug := config.GetWebSocketDebug()
+
+	messageSender := sender.NewWebSocketMessageSender()
+	messageReceiver := receiver.NewWebSocketMessageReceiver()
+	messageProcessor := processor.NewWebSocketMessageProcessor()
+
+	wsService := websocket.NewWebsocketService(
+		wsDebug,
+		wsHost,
+		messageSender,
+		messageReceiver,
+		messageProcessor,
+	)
+
+	wsService.StartServer(wsHost, wsPort)
 }
