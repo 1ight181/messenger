@@ -1,4 +1,4 @@
-package config_types
+package models
 
 type WebSocket struct {
 	Host  string `mapstructure:"host"`
