@@ -2,7 +2,7 @@ package receiver
 
 import (
 	"log"
-	types "messager/internal/messaging/types"
+	models "messager/internal/messaging/models"
 
 	"github.com/gorilla/websocket"
 )
@@ -19,17 +19,17 @@ func (wsmr *WebSocketMessageReceiver) SetConnection(conn *websocket.Conn) {
 	wsmr.connection = conn
 }
 
-func (wsmr *WebSocketMessageReceiver) ReceiveMessage() (types.Message, error) {
+func (wsmr *WebSocketMessageReceiver) ReceiveMessage() (models.Message, error) {
 	if wsmr.connection != nil {
-		var message types.Message
+		var message models.Message
 		if err := wsmr.connection.ReadJSON(&message); err != nil {
 
-			return types.Message{}, err
+			return models.Message{}, err
 		}
 		log.Printf("Получено сообщение: %s\n", message)
 		return message, nil
 	} else {
-		return types.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Connection is not set"}
+		return models.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Connection is not set"}
 	}
 
 }

@@ -1,12 +1,12 @@
 package config_reader
 
 import (
-	configTypes "messager/internal/config_reader/config_types"
+	models "messager/internal/config/models"
 
 	"github.com/spf13/viper"
 )
 
-func LoadConfig(path, filename, configType string) (*configTypes.Config, error) {
+func LoadConfig(path, filename, configType string) (*models.Config, error) {
 	viper.SetConfigName(filename)
 	viper.AddConfigPath(path)
 	viper.SetConfigType(configType)
@@ -15,7 +15,7 @@ func LoadConfig(path, filename, configType string) (*configTypes.Config, error) 
 		return nil, err
 	}
 
-	config := &configTypes.Config{}
+	config := &models.Config{}
 	if err := viper.Unmarshal(config); err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"messager/internal/config_reader"
+	config "messager/internal/config"
 	"messager/internal/messaging/processor"
 	"messager/internal/messaging/receiver"
 	"messager/internal/messaging/sender"
@@ -18,7 +18,7 @@ func main() {
 	configFilename := "config"
 	configFiletype := "yaml"
 
-	config, err := config_reader.LoadConfig(path, configFilename, configFiletype)
+	config, err := config.LoadConfig(path, configFilename, configFiletype)
 
 	if err != nil {
 		switch e := err.(type) {
@@ -33,9 +33,9 @@ func main() {
 		}
 	}
 
-	wsHost := config.GetWebSocketHost()
-	wsPort := config.GetWebSocketPort()
-	wsDebug := config.GetWebSocketDebug()
+	wsHost := config.WebSocket.Host
+	wsPort := config.WebSocket.Port
+	wsDebug := config.WebSocket.Debug
 
 	messageSender := sender.NewWebSocketMessageSender()
 	messageReceiver := receiver.NewWebSocketMessageReceiver()
