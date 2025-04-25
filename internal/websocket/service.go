@@ -1,11 +1,17 @@
 package websocket
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"messager/internal/websocket/interfaces"
+
+	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -73,24 +79,23 @@ func (ws *WebsocketService) Tag() string {
 // Параметры:
 //   - w: HTTP ответ для отправки данных клиенту.
 //
-// Поведение:he client.
-//   - Обновляет HTTP соединение до WebSocket соединения с использованием upgrader.   - r: The HTTP request containing the WebSocket handshake.
+// Поведение:
+//   - Обновляет HTTP соединение до WebSocket соединения с использованием upgrader.
 //   - Устанавливает WebSocket соединение для отправителя, получателя и обработчика сообщений.
 //   - Непрерывно слушает входящие сообщения, обрабатывает их и отправляет ответы.
 //   - Обрабатывает ошибки при получении, обработке или отправке сообщений и завершает
 //     соединение в случае возникновения ошибки.
 //
-// Ошибки:ption, processing, or response sending, and terminates
-//   - Если обновление до WebSocket соединения не удалось, ошибка логируется, и отправляется     the connection if an error occurs.
+// Ошибки:
+//   - Если обновление до WebSocket соединения не удалось, ошибка логируется, и отправляется
 //     HTTP ответ с кодом 500.
 //   - Если возникает ошибка при получении, обработке или отправке сообщений, ошибка
 //     логируется, и соединение закрывается.
-//     is logged, and the connection is closed.
 func (ws *WebsocketService) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := ws.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatalln(ws.Tag(), "Ошибка при апргрейде соедиенения:", err)
 		http.Error(w, "Не удалось установить WebSocket соединение", http.StatusInternalServerError)
+		log.Printf(ws.Tag(), "Ошибка при апгрейде соединения:", err, "IP:", r.RemoteAddr)
 		return
 	}
 
@@ -109,7 +114,7 @@ func (ws *WebsocketService) handleWebSocket(w http.ResponseWriter, r *http.Reque
 
 		responseMessage, err := ws.messageProcessor.ProcessMessage(message)
 		if err != nil {
-			ws.handleError(err, "Ошибка чтения сообщения")
+			ws.handleError(err, "Ошибка при обработке сообщения")
 			break
 		}
 
@@ -137,7 +142,7 @@ func (ws *WebsocketService) handleError(err error, message string) {
 // StartServer запускает WebSocket сервер на указанном хосте и порту.
 // Устанавливает HTTP обработчик для WebSocket эндпоинта на "/ws" и начинает
 // прослушивание входящих соединений. Если сервер не удается запустить, ошибка
-// логируется, и приложение завершает работу.
+// логируется. Сервер корректно завершает работу при получении сигнала завершения.
 //
 // Параметры:
 //   - host: Имя хоста или IP-адрес, на котором сервер будет слушать.
@@ -146,8 +151,33 @@ func (ws *WebsocketService) StartServer(host string, port string) {
 	address := fmt.Sprintf("%s:%s", host, port)
 	http.HandleFunc("/ws", ws.handleWebSocket)
 
-	log.Printf("Вебсокет запущен на: %s", address)
-	if err := http.ListenAndServe(address, nil); err != nil {
-		log.Fatal("Ошибка запуска сервера:", err)
+	serverStopped := make(chan struct{})
+
+	server := &http.Server{
+		Addr:    address,
+		Handler: nil,
+	}
+
+	go func() {
+		log.Printf("Вебсокет запущен на: %s", address)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Ошибка запуска сервера:", err)
+		}
+		close(serverStopped)
+	}()
+
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case <-signalChannel:
+		log.Println("Получен сигнал завершения, останавливаю сервер...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Println("Ошибка при остановке сервера:", err)
+		}
+	case <-serverStopped:
+		log.Println("Сервер остановлен самостоятельно")
 	}
 }
