@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	confutil "messager/internal/config/loaders"
 	confrpov "messager/internal/config/providers"
-	confutil "messager/internal/config/utility"
 
 	processor "messager/internal/messaging/processor"
 	receiver "messager/internal/messaging/receiver"
@@ -16,7 +16,7 @@ import (
 
 	ws "messager/internal/ws"
 	wsh "messager/internal/ws/handlers"
-	wsutil "messager/internal/ws/utility"
+	wsutil "messager/internal/ws/upgraders"
 
 	"github.com/spf13/viper"
 )
