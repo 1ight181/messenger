@@ -1,14 +1,22 @@
 package main
 
 import (
+	"crypto/tls"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 
-	config "messager/internal/config"
-	"messager/internal/messaging/processor"
-	"messager/internal/messaging/receiver"
-	"messager/internal/messaging/sender"
-	"messager/internal/websocket"
+	confrpov "messager/internal/config/providers"
+	confutil "messager/internal/config/utility"
+
+	processor "messager/internal/messaging/processor"
+	receiver "messager/internal/messaging/receiver"
+	sender "messager/internal/messaging/sender"
+
+	ws "messager/internal/ws"
+	wsh "messager/internal/ws/handlers"
+	wsutil "messager/internal/ws/utility"
 
 	"github.com/spf13/viper"
 )
@@ -25,11 +33,18 @@ import (
 //  5. Создает WebSocket-сервис, используя инициализированные компоненты и значения конфигурации.
 //  6. Запускает WebSocket-сервер на указанном хосте и порту.
 func main() {
-	path := "../configs"
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "../configs"
+		log.Printf("CONFIG_PATH не задан, используется путь по умолчанию: %s", configPath)
+	}
+
 	configFilename := "config"
 	configFiletype := "yaml"
 
-	config, err := config.LoadConfig(path, configFilename, configFiletype)
+	viperConfigProvider := &confrpov.ViperConfigProvider{}
+
+	config, err := confutil.LoadConfig(viperConfigProvider, configPath, configFilename, configFiletype)
 
 	if err != nil {
 		switch e := err.(type) {
@@ -44,21 +59,40 @@ func main() {
 		}
 	}
 
-	wsHost := config.WebSocket.Host
-	wsPort := config.WebSocket.Port
-	wsDebug := config.WebSocket.Debug
+	certificate, err := confutil.LoadCertificate(config.Certificate)
+	if err != nil {
+		log.Fatalf("Ошибка загрузки сертификата: %v", err)
+	}
 
-	messageSender := sender.NewWebSocketMessageSender()
-	messageReceiver := receiver.NewWebSocketMessageReceiver()
-	messageProcessor := processor.NewWebSocketMessageProcessor()
+	wsHost, wsPort, wsDebug, invalidOrigins := confutil.LoadWebsocket(config.WebSocket)
 
-	wsService := websocket.NewWebsocketService(
-		wsDebug,
-		wsHost,
-		messageSender,
-		messageReceiver,
-		messageProcessor,
+	wsUpgrager := wsutil.NewUpgrader(wsDebug, invalidOrigins)
+
+	wsHandler := wsh.NewWebSocketHandler(
+		wsUpgrager,
+		sender.NewWebSocketMessageSender(),
+		receiver.NewWebSocketMessageReceiver(),
+		processor.NewWebSocketMessageProcessor(),
 	)
 
-	wsService.StartServer(wsHost, wsPort)
+	wsHandlerFunc := http.HandlerFunc(wsHandler.HandleWebSocket)
+
+	address := fmt.Sprintf("%s:%s", wsHost, wsPort)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		MinVersion:   tls.VersionTLS12,
+	}
+
+	httpServer := &http.Server{
+		Addr:      address,
+		Handler:   wsHandlerFunc,
+		TLSConfig: tlsConfig,
+	}
+
+	wsService := ws.NewWebsocketService(
+		httpServer,
+	)
+
+	wsService.StartServer()
 }
