@@ -36,6 +36,17 @@ func (*WebSocketHandler) Tag() string {
 	return "WEBSOCKET_HANDLER"
 }
 
+// HandleWebSocket устанавливает WebSocket соединение и обрабатывает входящие сообщения.
+// Он апгрейдит HTTP соединение до WebSocket соединения и запускает цикл обработки сообщений.
+//
+// Параметры:
+//   - w: HTTP ответ для отправки ответов клиенту.
+//   - r: HTTP запрос, содержащий запрос на апгрейд до WebSocket.
+//
+// Поведение:
+//   - Пытается апгрейдить HTTP соединение до WebSocket соединения.
+//   - Если апгрейд не удался, возвращает ошибку HTTP 500 и логирует детали ошибки.
+//   - Если апгрейд успешен, запускает цикл обработки сообщений и гарантирует закрытие соединения по завершении.
 func (wsh *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := wsh.processConnection(w, r)
@@ -49,6 +60,16 @@ func (wsh *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Requ
 	wsh.handleMessageLoop()
 }
 
+// handleMessageLoop выполняет непрерывную обработку входящих WebSocket сообщений в цикле.
+// Он выполняет следующие шаги:
+// 1. Получает сообщение с использованием messageReceiver.
+// 2. Обрабатывает полученное сообщение с использованием messageProcessor.
+// 3. Отправляет обработанное сообщение-ответ с использованием messageSender.
+//
+// Если на любом этапе (получение, обработка или отправка) возникает ошибка,
+// метод обрабатывает её с помощью handleError и завершает цикл.
+//
+// Этот метод предназначен для работы до тех пор, пока не произойдет ошибка.
 func (wsh *WebSocketHandler) handleMessageLoop() {
 	for {
 		message, err := wsh.messageReceiver.ReceiveMessage()
