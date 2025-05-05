@@ -2,7 +2,7 @@ package processor
 
 import (
 	"log"
-	models "messager/internal/messaging/models"
+	models "messenger/internal/messaging/models"
 
 	"github.com/gorilla/websocket"
 )

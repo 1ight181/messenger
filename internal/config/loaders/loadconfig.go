@@ -1,8 +1,8 @@
 package loaders
 
 import (
-	"messager/internal/config/models"
-	"messager/internal/config/providers/interfaces"
+	"messenger/internal/config/models"
+	"messenger/internal/config/providers/interfaces"
 )
 
 // LoadConfig загружает конфигурацию с использованием предоставленного ConfigProvider.

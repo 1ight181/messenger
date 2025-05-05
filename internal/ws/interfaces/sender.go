@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	models "messager/internal/messaging/models"
-	"messager/internal/messaging/sender"
+	models "messenger/internal/messaging/models"
+	"messenger/internal/messaging/sender"
 
 	"github.com/gorilla/websocket"
 )

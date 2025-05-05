@@ -48,7 +48,7 @@ func (ws *WebsocketService) StartServer() {
 
 	go func() {
 		log.Printf("Вебсокет запущен на: %s", ws.server.Addr)
-		if err := ws.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := ws.server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Ошибка запуска сервера:", err)
 		}
 	}()

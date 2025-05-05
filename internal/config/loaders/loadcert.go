@@ -3,7 +3,7 @@ package loaders
 import (
 	"crypto/tls"
 	"fmt"
-	"messager/internal/config/models"
+	"messenger/internal/config/models"
 )
 
 // LoadCertificate загружает X.509 сертификат и соответствующий закрытый ключ
@@ -27,16 +27,18 @@ func LoadCertificate(certificateConfig models.Certificate) (tls.Certificate, err
 	certificateFileName := certificateConfig.CertificateFileName
 	certificateKeyFileName := certificateConfig.KeyFileName
 
-	certificateFullPath := fmt.Sprintf("%s/%s", certificatePath, certificateFileName)
-	certificateKeyFullPath := fmt.Sprintf("%s/%s", certificateKeyPath, certificateKeyFileName)
+	certificateFullPath := fmt.Sprintf("%s%s", certificatePath, certificateFileName)
+	certificateKeyFullPath := fmt.Sprintf("%s%s", certificateKeyPath, certificateKeyFileName)
 
 	cert, err := tls.LoadX509KeyPair(certificateFullPath, certificateKeyFullPath)
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("не удалось загрузить сертификат \n"+
 			"сертификат: %s,\n"+
-			"ключ: %s",
-			certificateFileName,
-			certificateKeyFileName)
+			"ключ: %s \n"+
+			"ошибка: %s",
+			certificateFullPath,
+			certificateKeyFullPath,
+			err)
 	}
 
 	return cert, nil

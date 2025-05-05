@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"os"
 
-	confloader "messager/internal/config/loaders"
-	confrpov "messager/internal/config/providers"
+	confloader "messenger/internal/config/loaders"
+	confrpov "messenger/internal/config/providers"
 
-	processor "messager/internal/messaging/processor"
-	receiver "messager/internal/messaging/receiver"
-	sender "messager/internal/messaging/sender"
+	processor "messenger/internal/messaging/processor"
+	receiver "messenger/internal/messaging/receiver"
+	sender "messenger/internal/messaging/sender"
 
-	ws "messager/internal/ws"
-	wsh "messager/internal/ws/handlers"
-	wsupgr "messager/internal/ws/upgraders"
+	ws "messenger/internal/ws"
+	wsh "messenger/internal/ws/handlers"
+	wsupgr "messenger/internal/ws/upgraders"
 
 	"github.com/spf13/viper"
 )

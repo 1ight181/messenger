@@ -1,7 +1,7 @@
 package sender
 
 import (
-	models "messager/internal/messaging/models"
+	models "messenger/internal/messaging/models"
 )
 
 type MessageSender interface {

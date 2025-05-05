@@ -1,7 +1,7 @@
 package loaders
 
 import (
-	conf "messager/internal/config/models"
+	conf "messenger/internal/config/models"
 )
 
 // LoadWebsocketConfig загружает конфигурацию WebSocket из предоставленного объекта webSocketConfig.

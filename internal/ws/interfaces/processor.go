@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	"messager/internal/messaging/processor"
+	"messenger/internal/messaging/processor"
 
 	"github.com/gorilla/websocket"
 )

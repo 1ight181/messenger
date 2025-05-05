@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"messager/internal/config/models"
+	"messenger/internal/config/models"
 
 	"github.com/spf13/viper"
 )

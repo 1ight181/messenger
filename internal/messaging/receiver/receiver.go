@@ -1,7 +1,7 @@
 package receiver
 
 import (
-	models "messager/internal/messaging/models"
+	models "messenger/internal/messaging/models"
 )
 
 type MessageReceiver interface {

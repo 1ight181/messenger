@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"log"
-	"messager/internal/ws/interfaces"
+	"messenger/internal/ws/interfaces"
 	"net/http"
 
 	"github.com/gorilla/websocket"
