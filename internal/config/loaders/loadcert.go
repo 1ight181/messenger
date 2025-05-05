@@ -1,4 +1,4 @@
-package utility
+package loaders
 
 import (
 	"crypto/tls"
@@ -6,19 +6,21 @@ import (
 	"messager/internal/config/models"
 )
 
-// LoadCertificateConfig создает полные пути к файлам сертификата и ключа
-// на основе предоставленной конфигурации.
+// LoadCertificate загружает X.509 сертификат и соответствующий закрытый ключ
+// из указанных файловых путей, предоставленных в конфигурации Certificate.
 //
 // Параметры:
-//   - certificateConfig: Указатель на структуру models.Certificate, содержащую конфигурацию сертификата.
+//   - certificateConfig (models.Certificate): Структура, содержащая пути и
+//     имена файлов для сертификата и ключа.
 //
 // Возвращает:
-//   - string: Полный путь к файлу сертификата.
-//   - string: Полный путь к файлу ключа сертификата.
-//   - error: Ошибка, если какие-либо обязательные поля конфигурации пусты.
+//   - (tls.Certificate): Загруженный TLS сертификат.
+//   - (error): Ошибка, если сертификат или ключ не удалось загрузить.
 //
-// Ошибки:
-//   - Возвращается ошибка, если не удалось загрузить сертификат
+// Функция формирует полные пути к файлам сертификата и ключа, используя
+// предоставленные пути к директориям и имена файлов, затем пытается загрузить
+// их с помощью tls.LoadX509KeyPair. В случае неудачи возвращается ошибка с
+// деталями об именах файлов сертификата и ключа.
 func LoadCertificate(certificateConfig models.Certificate) (tls.Certificate, error) {
 	certificatePath := certificateConfig.CertificatePath
 	certificateKeyPath := certificateConfig.KeyPath

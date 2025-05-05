@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	confutil "messager/internal/config/loaders"
+	confloader "messager/internal/config/loaders"
 	confrpov "messager/internal/config/providers"
 
 	processor "messager/internal/messaging/processor"
@@ -16,7 +16,7 @@ import (
 
 	ws "messager/internal/ws"
 	wsh "messager/internal/ws/handlers"
-	wsutil "messager/internal/ws/upgraders"
+	wsupgr "messager/internal/ws/upgraders"
 
 	"github.com/spf13/viper"
 )
@@ -44,7 +44,7 @@ func main() {
 
 	viperConfigProvider := &confrpov.ViperConfigProvider{}
 
-	config, err := confutil.LoadConfig(viperConfigProvider, configPath, configFilename, configFiletype)
+	config, err := confloader.LoadConfig(viperConfigProvider, configPath, configFilename, configFiletype)
 
 	if err != nil {
 		switch e := err.(type) {
@@ -59,14 +59,14 @@ func main() {
 		}
 	}
 
-	certificate, err := confutil.LoadCertificate(config.Certificate)
+	certificate, err := confloader.LoadCertificate(config.Certificate)
 	if err != nil {
 		log.Fatalf("Ошибка загрузки сертификата: %v", err)
 	}
 
-	wsHost, wsPort, wsDebug, invalidOrigins := confutil.LoadWebsocket(config.WebSocket)
+	wsHost, wsPort, wsDebug, invalidOrigins := confloader.LoadWebsocket(config.WebSocket)
 
-	wsUpgrager := wsutil.NewUpgrader(wsDebug, invalidOrigins)
+	wsUpgrager := wsupgr.NewUpgrader(wsDebug, invalidOrigins)
 
 	wsHandler := wsh.NewWebSocketHandler(
 		wsUpgrager,

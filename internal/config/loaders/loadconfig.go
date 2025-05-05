@@ -1,4 +1,4 @@
-package utility
+package loaders
 
 import (
 	"messager/internal/config/models"

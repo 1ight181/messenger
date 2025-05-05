@@ -1,4 +1,4 @@
-package utility
+package loaders
 
 import (
 	"net/http"
