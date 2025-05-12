@@ -1,4 +1,4 @@
-package processor
+package interfaces
 
 import (
 	models "messenger/internal/messaging/models"

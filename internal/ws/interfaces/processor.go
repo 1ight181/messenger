@@ -1,12 +1,12 @@
 package interfaces
 
 import (
-	"messenger/internal/messaging/processor"
+	"messenger/internal/messaging/interfaces"
 
 	"github.com/gorilla/websocket"
 )
 
 type WebSocketProcessor interface {
-	processor.MessageProcessor
+	interfaces.MessageProcessor
 	SetConnection(connection *websocket.Conn)
 }

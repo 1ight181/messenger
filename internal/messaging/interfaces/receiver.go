@@ -1,4 +1,4 @@
-package receiver
+package interfaces
 
 import (
 	models "messenger/internal/messaging/models"
