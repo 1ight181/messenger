@@ -2,7 +2,7 @@ package receiver
 
 import (
 	"log"
-	models "messenger/internal/messaging/models"
+	msg "messenger/internal/messaging/models/message"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,8 +13,10 @@ type WebSocketMessageReceiver struct {
 
 // NewWebSocketMessageReceiver создает и возвращает новый экземпляр WebSocketMessageReceiver.
 // Эта функция инициализирует WebSocketMessageReceiver с настройками по умолчанию.
-func NewWebSocketMessageReceiver() *WebSocketMessageReceiver {
-	return &WebSocketMessageReceiver{}
+func New() *WebSocketMessageReceiver {
+	return &WebSocketMessageReceiver{
+		connection: nil,
+	}
 }
 
 // SetConnection устанавливает WebSocket-соединение для WebSocketMessageReceiver.
@@ -27,22 +29,22 @@ func (wsmr *WebSocketMessageReceiver) SetConnection(conn *websocket.Conn) {
 }
 
 // ReceiveMessage читает сообщение в формате JSON из WebSocket-соединения
-// и возвращает его как экземпляр models.Message. Если соединение не установлено,
+// и возвращает его как экземпляр msg.Message. Если соединение не установлено,
 // возвращается ошибка websocket.CloseError, указывающая на ненормальное закрытие.
 // В случае ошибки при чтении возвращается ошибка вместе с пустым сообщением.
 //
 // Возвращает:
-// - models.Message: Декодированное сообщение из WebSocket-соединения.
+// - msg.Message: Декодированное сообщение из WebSocket-соединения.
 // - error: Ошибка, если соединение не установлено или если чтение сообщения завершилось неудачей.
-func (wsmr *WebSocketMessageReceiver) ReceiveMessage() (models.Message, error) {
+func (wsmr *WebSocketMessageReceiver) ReceiveMessage() (msg.Message, error) {
 	if wsmr.connection != nil {
-		var message models.Message
+		var message msg.Message
 		if err := wsmr.connection.ReadJSON(&message); err != nil {
-			return models.Message{}, err
+			return msg.Message{}, err
 		}
 		log.Printf("Получено сообщение: %s\n", message)
 		return message, nil
 	} else {
-		return models.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Connection is not set"}
+		return msg.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Connection is not set"}
 	}
 }

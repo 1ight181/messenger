@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"log"
+	msg "messenger/internal/messaging/models/message"
 	"messenger/internal/ws/interfaces"
 	"net/http"
 
@@ -84,7 +85,7 @@ func (wsh *WebSocketHandler) handleMessageLoop() {
 			break
 		}
 
-		if err := wsh.messageSender.SendResponseMessage(responseMessage); err != nil {
+		if err := wsh.messageSender.SendMessage(responseMessage); err != nil {
 			wsh.handleError(err, "Ошибка при формировании ответа")
 			break
 		}
@@ -99,7 +100,9 @@ func (wsh *WebSocketHandler) handleMessageLoop() {
 //   - err: Произошедшая ошибка.
 //   - message: Пользовательское сообщение, описывающее контекст ошибки.
 func (wsh *WebSocketHandler) handleError(err error, message string) {
-	if err := wsh.messageSender.SendErrorMessage(message); err != nil {
+	errorResponse := msg.NewErrorMessage("Ошибка отправки сообщения об ошибке")
+
+	if err := wsh.messageSender.SendMessage(errorResponse); err != nil {
 		log.Println(wsh.Tag(), "Ошибка отправки сообщения об ошибке:", err)
 	}
 	log.Println(wsh.Tag(), message, err)

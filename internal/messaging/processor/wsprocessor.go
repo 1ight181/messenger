@@ -2,24 +2,46 @@ package processor
 
 import (
 	"log"
-	models "messenger/internal/messaging/models"
+	msg "messenger/internal/messaging/models/message"
 
 	"github.com/gorilla/websocket"
 )
 
-// WebSocketMessageProcessor представляет процессор для обработки сообщений WebSocket.
 type WebSocketMessageProcessor struct {
-	connection *websocket.Conn
+	connection          *websocket.Conn
+	errorResponseText   string
+	infoResponseText    string
+	dataResponseText    string
+	unknownResponseText string
 }
 
-// NewWebSocketMessageProcessor создает и возвращает новый экземпляр WebSocketMessageProcessor.
-// Эта функция инициализирует WebSocketMessageProcessor с настройками по умолчанию.
-func NewWebSocketMessageProcessor() *WebSocketMessageProcessor {
-	return &WebSocketMessageProcessor{}
+type Options struct {
+	ErrorResponseText   string
+	InfoResponseText    string
+	DataResponseText    string
+	UnknownResponseText string
+}
+
+// New создает новый экземпляр WebSocketMessageProcessor с предоставленными параметрами.
+// Параметр options позволяет настроить тексты ответов для ошибок, информационных сообщений и данных.
+//
+// Параметры:
+//   - options: Структура Options, содержащая конфигурацию для WebSocketMessageProcessor.
+//
+// Возвращает:
+//
+//	Указатель на вновь инициализированный WebSocketMessageProcessor.
+func New(options Options) *WebSocketMessageProcessor {
+	return &WebSocketMessageProcessor{
+		connection:          nil,
+		errorResponseText:   options.ErrorResponseText,
+		infoResponseText:    options.InfoResponseText,
+		dataResponseText:    options.DataResponseText,
+		unknownResponseText: options.UnknownResponseText,
+	}
 }
 
 // SetConnection устанавливает WebSocket-соединение для WebSocketMessageProcessor.
-// Этот метод присваивает предоставленный экземпляр websocket.Conn в поле connection процессора.
 //
 // Параметры:
 //   - conn: Указатель на websocket.Conn, представляющий устанавливаемое WebSocket-соединение.
@@ -28,98 +50,103 @@ func (wsmp *WebSocketMessageProcessor) SetConnection(conn *websocket.Conn) {
 }
 
 // ProcessMessage обрабатывает входящее сообщение WebSocket в зависимости от его типа.
-// Он обрабатывает различные типы сообщений ("error", "info", "data") с помощью
-// соответствующих методов обработки и возвращает ответное сообщение.
+// Обрабатывает различные типы сообщений ("error", "info", "data") с использованием соответствующих
+// методов обработки и возвращает ответное сообщение.
 //
 // Параметры:
-//   - message: Входящее сообщение типа models.Message, которое нужно обработать.
+//   - message: Входящее сообщение типа msg.Message для обработки.
 //
 // Возвращает:
-//   - models.Message: Обработанное ответное сообщение.
-//   - error: Ошибка, если WebSocket-соединение не установлено или произошла другая проблема.
+//   - msg.Message: Обработанное ответное сообщение.
+//   - error: Ошибка, если WebSocket-соединение не установлено или возникла другая проблема.
 //
 // Поведение:
 //   - Если WebSocket-соединение не установлено, возвращает ошибку типа *websocket.CloseError.
-//   - Для известных типов сообщений ("error", "info", "data") обрабатывает сообщение с помощью
+//   - Для известных типов сообщений (ErrorMessage, InfoMessage, DataMessage) обрабатывает сообщение с использованием
 //     соответствующих методов (processError, processInfo, processData).
 //   - Для неизвестных типов сообщений регистрирует проблему и возвращает ответное сообщение
-//     с типом "error_unknown_message_type" и описанием ошибки.
-func (wsmp *WebSocketMessageProcessor) ProcessMessage(message models.Message) (models.Message, error) {
+//     с типом UnknownResponse и описанием ошибки.
+func (wsmp *WebSocketMessageProcessor) ProcessMessage(message msg.Message) (msg.Message, error) {
 	if wsmp.connection != nil {
 		switch message.Type {
-		case "error":
-			responseMessage := wsmp.processError(message)
+		case msg.ErrorMessage:
+			responseMessage := wsmp.processError(message, wsmp.errorResponseText)
 			return responseMessage, nil
-		case "info":
-			responseMessage := wsmp.processInfo(message)
+		case msg.InfoMessage:
+			responseMessage := wsmp.processInfo(message, wsmp.infoResponseText)
 			return responseMessage, nil
-		case "data":
-			responseMessage := wsmp.processData(message)
+		case msg.DataMessage:
+			responseMessage := wsmp.processData(message, wsmp.dataResponseText)
 			return responseMessage, nil
 		default:
 			log.Printf("Получен неизвестный тип сообщения: %s\n", message)
-			responseMessage := models.Message{
-				Type: "error_unknown_message_type",
+			responseMessage := msg.Message{
+				Type: msg.UnknownResponse,
 				Text: "Неизвестный тип сообщения",
 			}
 			return responseMessage, nil
 		}
 	} else {
-		return models.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Connection is not set"}
+		return msg.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Соединение не установлено"}
+	}
+}
+
+// createResponseMessage создает новое ответное сообщение с указанным типом сообщения и текстом.
+//
+// Параметры:
+//   - messageType: Тип создаваемого сообщения.
+//   - responseText: Текстовое содержимое ответного сообщения.
+//
+// Возвращает:
+//   - Экземпляр msg.Message, содержащий указанный тип и текст.
+func (wsmp *WebSocketMessageProcessor) createResponseMessage(messageType msg.MessageType, responseText string) msg.Message {
+	return msg.Message{
+		Type: messageType,
+		Text: responseText,
 	}
 }
 
 // processError обрабатывает сообщение об ошибке, полученное от клиента.
-// Он регистрирует сообщение об ошибке и возвращает ответное сообщение,
-// указывающее, что сообщение об ошибке было получено.
+// Регистрирует сообщение об ошибке и возвращает ответное сообщение, указывающее,
+// что сообщение об ошибке было получено.
 //
 // Параметры:
 //   - errorMessage: Сообщение об ошибке, отправленное клиентом.
+//   - responseText: Предопределенный текст для ответа.
 //
 // Возвращает:
-//   - Объект models.Message, содержащий ответное сообщение с типом "error_response"
-//     и текстом, указывающим, что сообщение об ошибке было получено.
-func (wsmp *WebSocketMessageProcessor) processError(errorMessage models.Message) models.Message {
+//   - msg.Message: Ответное сообщение с типом "error_response" и предоставленным текстом ответа.
+func (wsmp *WebSocketMessageProcessor) processError(errorMessage msg.Message, responseText string) msg.Message {
 	log.Printf("Клиент отправил сообщение об ошибке: %s\n", errorMessage.Text)
-	responseMessage := models.Message{
-		Type: "error_response",
-		Text: "Сообщение об ошибке получено",
-	}
-	return responseMessage
+	return wsmp.createResponseMessage(msg.ErrorMessage, responseText)
 }
 
 // processInfo обрабатывает информационное сообщение, полученное от клиента.
-// Он регистрирует содержимое сообщения и возвращает ответное сообщение,
+// Регистрирует содержимое сообщения и возвращает ответное сообщение,
 // подтверждающее получение информационного сообщения.
 //
 // Параметры:
-//   - infoMessage (models.Message): Информационное сообщение, отправленное клиентом.
+//   - infoMessage: Информационное сообщение, отправленное клиентом.
+//   - responseText: Предопределенный текст для ответа.
 //
 // Возвращает:
-//   - models.Message: Ответное сообщение, указывающее, что информационное
+//   - msg.Message: Ответное сообщение, указывающее, что информационное
 //     сообщение было получено.
-func (wsmp *WebSocketMessageProcessor) processInfo(infoMessage models.Message) models.Message {
+func (wsmp *WebSocketMessageProcessor) processInfo(infoMessage msg.Message, responseText string) msg.Message {
 	log.Printf("Клиент отправил информационное сообщение: %s\n", infoMessage.Text)
-	responseMessage := models.Message{
-		Type: "info_response",
-		Text: "Информационное сообщение получено",
-	}
-	return responseMessage
+	return wsmp.createResponseMessage(msg.InfoResponse, responseText)
 }
 
 // processData обрабатывает входящее сообщение с данными и генерирует ответное сообщение.
-// Он регистрирует текст полученного сообщения и возвращает предопределенный ответ.
+// Регистрирует текст полученного сообщения и возвращает предопределенный ответ.
 //
 // Параметры:
-//   - dataMessage: Входящее сообщение типа models.Message, содержащее данные.
+//   - dataMessage: Входящее сообщение типа msg.Message, содержащее данные.
+//   - responseText: Предопределенный текст для ответа.
 //
 // Возвращает:
-//   - models.Message: Ответное сообщение с типом "data_response" и предопределенным текстом.
-func (wsmp *WebSocketMessageProcessor) processData(dataMessage models.Message) models.Message {
+//   - msg.Message: Ответное сообщение с типом "data_response" и предоставленным текстом ответа.
+func (wsmp *WebSocketMessageProcessor) processData(dataMessage msg.Message, responseText string) msg.Message {
 	log.Printf("Клиент отправил сообщение с данными: %s\n", dataMessage.Text)
-	responseMessage := models.Message{
-		Type: "data_response",
-		Text: "Сообщение с данными получено",
-	}
-	return responseMessage
+	return wsmp.createResponseMessage(msg.DataResponse, responseText)
 }

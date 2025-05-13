@@ -78,11 +78,23 @@ func Run() {
 
 	wsUpgrager := wsupgr.NewUpgrader(wsDebug, invalidOrigins)
 
+	wsProcessor := processor.New(
+		processor.Options{
+			ErrorResponseText: "Ошибка получена и обработана",
+			InfoResponseText:  "Информационное собщение получено и обработано",
+			DataResponseText:  "Сообщение с данными получено и обработано",
+		},
+	)
+
+	wsSender := sender.New()
+
+	wsReceiver := receiver.New()
+
 	wsHandler := wsh.NewWebSocketHandler(
 		wsUpgrager,
-		sender.NewWebSocketMessageSender(),
-		receiver.NewWebSocketMessageReceiver(),
-		processor.NewWebSocketMessageProcessor(),
+		wsSender,
+		wsReceiver,
+		wsProcessor,
 	)
 
 	wsHandlerFunc := http.HandlerFunc(wsHandler.HandleWebSocket)

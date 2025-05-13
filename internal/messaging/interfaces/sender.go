@@ -1,9 +1,9 @@
 package interfaces
 
 import (
-	models "messenger/internal/messaging/models"
+	message "messenger/internal/messaging/models/message"
 )
 
 type MessageSender interface {
-	SendMessage(message models.Message) error
+	SendMessage(message message.Message) error
 }

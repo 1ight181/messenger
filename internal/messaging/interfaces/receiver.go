@@ -1,9 +1,9 @@
 package interfaces
 
 import (
-	models "messenger/internal/messaging/models"
+	message "messenger/internal/messaging/models/message"
 )
 
 type MessageReceiver interface {
-	ReceiveMessage() (models.Message, error)
+	ReceiveMessage() (message.Message, error)
 }

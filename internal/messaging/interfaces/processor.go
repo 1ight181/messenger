@@ -1,9 +1,9 @@
 package interfaces
 
 import (
-	models "messenger/internal/messaging/models"
+	message "messenger/internal/messaging/models/message"
 )
 
 type MessageProcessor interface {
-	ProcessMessage(models.Message) (models.Message, error) //обработать сообщение и вернуть ответное сообщение
+	ProcessMessage(message.Message) (message.Message, error) //обработать сообщение и вернуть ответное сообщение
 }
