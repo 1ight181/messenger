@@ -12,6 +12,10 @@ import (
 // - filename: Имя файла конфигурации.
 // - configType: Тип файла конфигурации (например, "json", "yaml").
 // Возвращает указатель на модель Config и ошибку, если процесс загрузки завершился неудачей.
-func LoadConfig(configProvider interfaces.ConfigProvider, path, filename, configType string) (*models.Config, error) {
+func LoadConfig(
+	configProvider interfaces.ConfigProvider,
+	path, filename,
+	configType string,
+) (*models.Config, error) {
 	return configProvider.Load(path, filename, configType)
 }

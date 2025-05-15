@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"errors"
 	"log"
 	msg "messenger/internal/messaging/models/message"
 
@@ -87,7 +88,7 @@ func (wsmp *WebSocketMessageProcessor) ProcessMessage(message msg.Message) (msg.
 			return responseMessage, nil
 		}
 	} else {
-		return msg.Message{}, &websocket.CloseError{Code: websocket.CloseAbnormalClosure, Text: "Соединение не установлено"}
+		return msg.Message{}, errors.New("соединение не установлено")
 	}
 }
 
@@ -99,7 +100,10 @@ func (wsmp *WebSocketMessageProcessor) ProcessMessage(message msg.Message) (msg.
 //
 // Возвращает:
 //   - Экземпляр msg.Message, содержащий указанный тип и текст.
-func (wsmp *WebSocketMessageProcessor) createResponseMessage(messageType msg.MessageType, responseText string) msg.Message {
+func (wsmp *WebSocketMessageProcessor) createResponseMessage(
+	messageType msg.MessageType,
+	responseText string,
+) msg.Message {
 	return msg.Message{
 		Type: messageType,
 		Text: responseText,
@@ -116,7 +120,10 @@ func (wsmp *WebSocketMessageProcessor) createResponseMessage(messageType msg.Mes
 //
 // Возвращает:
 //   - msg.Message: Ответное сообщение с типом "error_response" и предоставленным текстом ответа.
-func (wsmp *WebSocketMessageProcessor) processError(errorMessage msg.Message, responseText string) msg.Message {
+func (wsmp *WebSocketMessageProcessor) processError(
+	errorMessage msg.Message,
+	responseText string,
+) msg.Message {
 	log.Printf("Клиент отправил сообщение об ошибке: %s\n", errorMessage.Text)
 	return wsmp.createResponseMessage(msg.ErrorMessage, responseText)
 }
@@ -132,7 +139,10 @@ func (wsmp *WebSocketMessageProcessor) processError(errorMessage msg.Message, re
 // Возвращает:
 //   - msg.Message: Ответное сообщение, указывающее, что информационное
 //     сообщение было получено.
-func (wsmp *WebSocketMessageProcessor) processInfo(infoMessage msg.Message, responseText string) msg.Message {
+func (wsmp *WebSocketMessageProcessor) processInfo(
+	infoMessage msg.Message,
+	responseText string,
+) msg.Message {
 	log.Printf("Клиент отправил информационное сообщение: %s\n", infoMessage.Text)
 	return wsmp.createResponseMessage(msg.InfoResponse, responseText)
 }
@@ -146,7 +156,10 @@ func (wsmp *WebSocketMessageProcessor) processInfo(infoMessage msg.Message, resp
 //
 // Возвращает:
 //   - msg.Message: Ответное сообщение с типом "data_response" и предоставленным текстом ответа.
-func (wsmp *WebSocketMessageProcessor) processData(dataMessage msg.Message, responseText string) msg.Message {
+func (wsmp *WebSocketMessageProcessor) processData(
+	dataMessage msg.Message,
+	responseText string,
+) msg.Message {
 	log.Printf("Клиент отправил сообщение с данными: %s\n", dataMessage.Text)
 	return wsmp.createResponseMessage(msg.DataResponse, responseText)
 }

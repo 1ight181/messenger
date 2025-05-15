@@ -19,7 +19,11 @@ type ViperConfigProvider struct{}
 // Возвращает:
 //   - *models.Config: Указатель на загруженную и проверенную структуру конфигурации.
 //   - error: Ошибка, если файл конфигурации не может быть прочитан, преобразован или проверен.
-func (v *ViperConfigProvider) Load(path, filename, configType string) (*models.Config, error) {
+func (v *ViperConfigProvider) Load(
+	path,
+	filename,
+	configType string,
+) (*models.Config, error) {
 	viper.SetConfigName(filename)
 	viper.AddConfigPath(path)
 	viper.SetConfigType(configType)

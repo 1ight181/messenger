@@ -5,5 +5,5 @@ import (
 )
 
 type MessageProcessor interface {
-	ProcessMessage(message.Message) (message.Message, error) //обработать сообщение и вернуть ответное сообщение
+	ProcessMessage(message.Message) (message.Message, error)
 }

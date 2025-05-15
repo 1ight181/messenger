@@ -9,13 +9,13 @@ import (
 
 	confloader "messenger/internal/config/loaders"
 	confrpov "messenger/internal/config/providers"
+	"messenger/internal/factories"
 
 	processor "messenger/internal/messaging/processor"
-	receiver "messenger/internal/messaging/receiver"
-	sender "messenger/internal/messaging/sender"
+	"messenger/internal/messaging/receiver"
+	"messenger/internal/messaging/sender"
 
 	ws "messenger/internal/ws"
-	wsh "messenger/internal/ws/handlers"
 	wsupgr "messenger/internal/ws/upgraders"
 
 	"github.com/spf13/viper"
@@ -54,7 +54,12 @@ func Run() {
 
 	viperConfigProvider := &confrpov.ViperConfigProvider{}
 
-	config, err := confloader.LoadConfig(viperConfigProvider, configPath, configFilename, configFiletype)
+	config, err := confloader.LoadConfig(
+		viperConfigProvider,
+		configPath,
+		configFilename,
+		configFiletype,
+	)
 
 	if err != nil {
 		switch e := err.(type) {
@@ -78,26 +83,27 @@ func Run() {
 
 	wsUpgrager := wsupgr.NewUpgrader(wsDebug, invalidOrigins)
 
-	wsProcessor := processor.New(
+	wsProcessorOptions :=
 		processor.Options{
 			ErrorResponseText: "Ошибка получена и обработана",
 			InfoResponseText:  "Информационное собщение получено и обработано",
 			DataResponseText:  "Сообщение с данными получено и обработано",
-		},
-	)
+		}
 
-	wsSender := sender.New()
+	wsSenderOptions := sender.Options{}
+	wsReceiverOptions := receiver.Options{}
 
-	wsReceiver := receiver.New()
-
-	wsHandler := wsh.NewWebSocketHandler(
+	webSocketHandlerFactory := factories.New(
 		wsUpgrager,
-		wsSender,
-		wsReceiver,
-		wsProcessor,
+		wsSenderOptions,
+		wsReceiverOptions,
+		wsProcessorOptions,
 	)
 
-	wsHandlerFunc := http.HandlerFunc(wsHandler.HandleWebSocket)
+	wsHandlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := webSocketHandlerFactory.NewHandler()
+		handler.HandleWebSocket(w, r)
+	})
 
 	address := fmt.Sprintf("%s:%s", wsHost, wsPort)
 

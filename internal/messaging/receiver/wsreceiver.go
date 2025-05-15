@@ -11,11 +11,14 @@ type WebSocketMessageReceiver struct {
 	connection *websocket.Conn
 }
 
-// NewWebSocketMessageReceiver создает и возвращает новый экземпляр WebSocketMessageReceiver.
-// Эта функция инициализирует WebSocketMessageReceiver с настройками по умолчанию.
-func New() *WebSocketMessageReceiver {
+type Options struct {
+	// Здесь можно добавить дополнительные параметры конфигурации
+}
+
+func New(options Options) *WebSocketMessageReceiver {
 	return &WebSocketMessageReceiver{
 		connection: nil,
+		// option: options.option,
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	msg "messenger/internal/messaging/models/message"
 	"messenger/internal/ws/interfaces"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -17,7 +18,7 @@ type WebSocketHandler struct {
 	messageProcessor interfaces.WebSocketProcessor
 }
 
-func NewWebSocketHandler(
+func New(
 	upgrader websocket.Upgrader,
 	messageSender interfaces.WebSocketSender,
 	messageReceiver interfaces.WebSocketReceiver,
@@ -102,10 +103,29 @@ func (wsh *WebSocketHandler) handleMessageLoop() {
 func (wsh *WebSocketHandler) handleError(err error, message string) {
 	errorResponse := msg.NewErrorMessage("Ошибка отправки сообщения об ошибке")
 
+	if websocket.IsCloseError(err,
+		websocket.CloseNormalClosure,
+		websocket.CloseGoingAway,
+		websocket.CloseAbnormalClosure,
+	) {
+		wsh.handleConnectionClose(err)
+		return
+	}
+
 	if err := wsh.messageSender.SendMessage(errorResponse); err != nil {
 		log.Println(wsh.Tag(), "Ошибка отправки сообщения об ошибке:", err)
 	}
 	log.Println(wsh.Tag(), message, err)
+}
+
+func (wsh *WebSocketHandler) handleConnectionClose(err error) {
+	if closeErr, ok := err.(*websocket.CloseError); ok {
+		log.Printf("Соединение закрыто: код %d, причина: %s\n", closeErr.Code, closeErr.Text)
+		wsh.messageSender.SendCloseMessage(closeErr.Code, "Закрытие обработано", 3*time.Second)
+
+	} else {
+		log.Println(wsh.Tag(), "Соединение закрыто:", err)
+	}
 }
 
 func (wsh *WebSocketHandler) processConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
