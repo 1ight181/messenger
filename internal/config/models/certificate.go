@@ -1,6 +1,8 @@
 package models
 
-import "fmt"
+import (
+	"errors"
+)
 
 type Certificate struct {
 	CertificateFileName string `mapstructure:"cert_file_name"`
@@ -18,16 +20,16 @@ type Certificate struct {
 // - KeyPath: путь к файлу ключа.
 func (c *Certificate) Validate() error {
 	if c.CertificateFileName == "" {
-		return fmt.Errorf("требуется имя файла сертификата")
+		return errors.New("требуется имя файла сертификата")
 	}
 	if c.KeyFileName == "" {
-		return fmt.Errorf("требуется имя файла ключа")
+		return errors.New("требуется имя файла ключа")
 	}
 	if c.CertificatePath == "" {
-		return fmt.Errorf("требуется путь к сертификату")
+		return errors.New("требуется путь к сертификату")
 	}
 	if c.KeyPath == "" {
-		return fmt.Errorf("требуется путь к ключу")
+		return errors.New("требуется путь к ключу")
 	}
 	return nil
 }
