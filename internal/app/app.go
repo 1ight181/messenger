@@ -1,24 +1,13 @@
 package app
 
 import (
-	"crypto/tls"
-	"fmt"
 	"log"
-	"net/http"
-	"os"
 
-	confloader "messenger/internal/config/loaders"
-	confrpov "messenger/internal/config/providers"
-	"messenger/internal/factories"
+	viperprov "messenger/internal/config/providers/viper"
 
 	processor "messenger/internal/messaging/processor"
 	"messenger/internal/messaging/receiver"
 	"messenger/internal/messaging/sender"
-
-	ws "messenger/internal/ws"
-	wsupgr "messenger/internal/ws/upgraders"
-
-	"github.com/spf13/viper"
 )
 
 // Run инициализирует и запускает приложение WebSocket-сервера.
@@ -43,45 +32,23 @@ import (
 // Эта функция регистрирует фатальные ошибки и завершает приложение, если возникают
 // критические проблемы во время инициализации или запуска.
 func Run() {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "../configs"
-		log.Printf("CONFIG_PATH не задан, используется путь по умолчанию: %s", configPath)
+	appConfigOptions := AppConfigOptions{
+		Provider:    &viperprov.ViperConfigProvider{},
+		FileName:    "config",
+		FileType:    "yaml",
+		EnvVar:      "CONFIG_PATH",
+		DefaultPath: "../config",
 	}
 
-	configFilename := "config"
-	configFiletype := "yaml"
-
-	viperConfigProvider := &confrpov.ViperConfigProvider{}
-
-	config, err := confloader.LoadConfig(
-		viperConfigProvider,
-		configPath,
-		configFilename,
-		configFiletype,
-	)
-
+	config, err := loadAppConfig(appConfigOptions)
 	if err != nil {
-		switch e := err.(type) {
-		case *os.PathError:
-			log.Fatalf("Ошибка пути: %v", e)
-		case *viper.ConfigFileNotFoundError:
-			log.Fatalf("Конфигурационный файл не найден: %v", e)
-		case *viper.ConfigParseError:
-			log.Fatalf("Ошибка при разборе конфигурации: %v", e)
-		default:
-			log.Fatalf("Неизвестная ошибка: %v", e)
-		}
+		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 
-	certificate, err := confloader.LoadCertificate(config.Certificate)
+	tlsConfig, err := loadAppCertificateConfig(config.Certificate)
 	if err != nil {
 		log.Fatalf("Ошибка загрузки сертификата: %v", err)
 	}
-
-	wsHost, wsPort, wsDebug, invalidOrigins := confloader.LoadWebsocket(config.WebSocket)
-
-	wsUpgrager := wsupgr.NewUpgrader(wsDebug, invalidOrigins)
 
 	wsProcessorOptions :=
 		processor.Options{
@@ -93,34 +60,14 @@ func Run() {
 	wsSenderOptions := sender.Options{}
 	wsReceiverOptions := receiver.Options{}
 
-	webSocketHandlerFactory := factories.New(
-		wsUpgrager,
-		wsSenderOptions,
-		wsReceiverOptions,
-		wsProcessorOptions,
-	)
-
-	wsHandlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler := webSocketHandlerFactory.NewHandler()
-		handler.HandleWebSocket(w, r)
-	})
-
-	address := fmt.Sprintf("%s:%s", wsHost, wsPort)
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		MinVersion:   tls.VersionTLS12,
+	webSocketServiceOptions := WebSocketServiceOptions{
+		Config:           config.WebSocket,
+		TLSConfig:        &tlsConfig,
+		SenderOptions:    wsSenderOptions,
+		ReceiverOptions:  wsReceiverOptions,
+		ProcessorOptions: wsProcessorOptions,
 	}
-
-	httpServer := &http.Server{
-		Addr:      address,
-		Handler:   wsHandlerFunc,
-		TLSConfig: tlsConfig,
-	}
-
-	wsService := ws.NewWebsocketService(
-		httpServer,
-	)
+	wsService := loadAppWebSocketService(webSocketServiceOptions)
 
 	wsService.StartServer()
 }

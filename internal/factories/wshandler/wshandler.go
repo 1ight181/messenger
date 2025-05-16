@@ -1,4 +1,4 @@
-package factories
+package websocket
 
 import (
 	"messenger/internal/messaging/processor"
@@ -11,10 +11,7 @@ import (
 )
 
 type WebSocketHandlerFactory struct {
-	upgrader         websocket.Upgrader
-	senderOptions    sender.Options
-	receiverOptions  receiver.Options
-	processorOptions processor.Options
+	options Options
 }
 
 // New создает и возвращает новый экземпляр WebSocketHandlerFactory с предоставленными
@@ -32,17 +29,18 @@ type WebSocketHandlerFactory struct {
 //
 //   - *WebSocketHandlerFactory - Указатель на инициализированную фабрику.
 func New(
-	upgrader websocket.Upgrader,
-	senderOptions sender.Options,
-	receiverOptions receiver.Options,
-	processorOpts processor.Options,
+	options Options,
 ) *WebSocketHandlerFactory {
 	return &WebSocketHandlerFactory{
-		upgrader:         upgrader,
-		senderOptions:    senderOptions,
-		receiverOptions:  receiverOptions,
-		processorOptions: processorOpts,
+		options: options,
 	}
+}
+
+type Options struct {
+	Upgrader         websocket.Upgrader
+	SenderOptions    sender.Options
+	ReceiverOptions  receiver.Options
+	ProcessorOptions processor.Options
 }
 
 // NewHandler создает и возвращает новый экземпляр handlers.WebSocketHandler,
@@ -50,9 +48,9 @@ func New(
 // Зависимости создаются с использованием опций фабрики.
 func (f *WebSocketHandlerFactory) NewHandler() *handlers.WebSocketHandler {
 	return handlers.New(
-		f.upgrader,
-		sender.New(f.senderOptions),
-		receiver.New(f.receiverOptions),
-		processor.New(f.processorOptions),
+		f.options.Upgrader,
+		sender.New(f.options.SenderOptions),
+		receiver.New(f.options.ReceiverOptions),
+		processor.New(f.options.ProcessorOptions),
 	)
 }
